@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Settings - {{ settings.system_name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/modern-blue-yellow.css') }}" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+
+<!-- Modern Navigation Header -->
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container-fluid">
+        <!-- Brand -->
+        <a class="navbar-brand d-flex flex-column align-items-start" href="/">
+            <span style="font-size: 2rem; font-weight: 600;">⚙️ Admin Settings</span>
+            <span style="font-size: 1.2rem; font-style: italic; opacity: 0.8;">System Configuration Panel</span>
+        </a>
+
+        <!-- Toggle button for mobile -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Navigation items -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <!-- Empty space for better layout -->
+            </ul>
+            
+            <!-- User info and actions -->
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <span class="nav-link">
+                        <span class="badge" style="background: linear-gradient(135deg, var(--accent-yellow), var(--dark-yellow)); color: var(--text-primary);">
+                            <i class="fas fa-user-shield"></i>
+                            {{ session.username }} (Admin)
+                        </span>
+                    </span>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/">
+                        <i class="fas fa-home"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/logout">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid mt-4" style="max-width: 1400px;">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('update_settings') }}" method="post" enctype="multipart/form-data">
+            <div class="row">
+                <div class="col-lg-8">
+                    <!-- Basic Settings -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">🏢 Basic Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="systemName" class="form-label">System Name</label>
+                                <input type="text" class="form-control" id="systemName" name="system_name" value="{{ settings.system_name }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="systemDescription" class="form-label">System Description</label>
+                                <textarea class="form-control" id="systemDescription" name="system_description" rows="3">{{ settings.branding.system_description }}</textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="footerText" class="form-label">Footer Text</label>
+                                <input type="text" class="form-control" id="footerText" name="footer_text" value="{{ settings.branding.footer_text }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Account Management -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">👤 Account Management</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="text-muted mb-3">Change Your Password</h6>
+                            <div class="mb-3">
+                                <label for="currentPassword" class="form-label">Current Password</label>
+                                <input type="password" class="form-control" id="currentPassword" name="current_password" placeholder="Enter current password">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="newPassword" class="form-label">New Password</label>
+                                    <input type="password" class="form-control" id="newPassword" name="new_password" placeholder="Enter new password">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                                    <input type="password" class="form-control" id="confirmPassword" name="confirm_password" placeholder="Confirm new password">
+                                </div>
+                            </div>
+                            <div class="d-grid mb-4">
+                                <button type="button" class="btn btn-warning" onclick="changePassword()">🔑 Change My Password</button>
+                            </div>
+                            
+                            <hr>
+                            
+                            <h6 class="text-muted mb-3">Manage User Passwords</h6>
+                            <div class="mb-3">
+                                <label for="targetUser" class="form-label">Select User</label>
+                                <select class="form-select" id="targetUser" name="target_user">
+                                    <option value="">Select a user to change password...</option>
+                                    <option value="admin">Admin</option>
+                                    <option value="user">User</option>
+                                </select>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="userNewPassword" class="form-label">New Password for User</label>
+                                    <input type="password" class="form-control" id="userNewPassword" name="user_new_password" placeholder="Enter new password for user">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="userConfirmPassword" class="form-label">Confirm User Password</label>
+                                    <input type="password" class="form-control" id="userConfirmPassword" name="user_confirm_password" placeholder="Confirm new password for user">
+                                </div>
+                            </div>
+                            <div class="d-grid">
+                                <button type="button" class="btn btn-danger" onclick="changeUserPassword()">🔐 Change User Password</button>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">💾 Save Settings</button>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <!-- Logo Management -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">🖼️ Logo Management</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="showLogo" name="show_logo" {% if settings.branding.show_logo %}checked{% endif %}>
+                                    <label class="form-check-label" for="showLogo">Show Logo</label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="logoUpload" class="form-label">Upload New Logo</label>
+                                <input type="file" class="form-control" id="logoUpload" name="logo" accept=".png,.jpg,.jpeg,.gif,.svg,.webp">
+                                <div class="form-text">Supported formats: PNG, JPG, GIF, SVG, WebP</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ID Format Update Section -->
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h5 class="mb-0">🆔 Record ID Format Update</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-3">
+                                Update existing record IDs from old format to new simplified format:
+                            </p>
+                            <div class="mb-3">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Old Format:</strong><br>
+                                        <code class="text-danger">LGU_TNGLN-MAYOR'S OFFICE - 001</code>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>New Format:</strong><br>
+                                        <code class="text-success">MAYOR'S OFFICE - 001</code>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Preview Container -->
+                            <div id="idUpdatePreview" class="alert alert-info d-none">
+                                <h6>Preview of Changes:</h6>
+                                <div id="previewContent"></div>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-info" onclick="checkIdUpdateInfo()">📊 Check Records Status</button>
+                                <button type="button" class="btn btn-warning" id="updateIdsBtn" onclick="updateRecordIds()" disabled>🔄 Update Record IDs</button>
+                            </div>
+                            
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    💡 This will only update records that still use the old format. New records are automatically created with the new format.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reset Data Button -->
+                    <form action="{{ url_for('reset_data') }}" method="post" class="mt-3">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to reset all data? All records will be permanently deleted.')" >🗑️ Reset All Data</button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Live color and font preview updates
+        document.addEventListener('DOMContentLoaded', function() {
+            const colorInputs = document.querySelectorAll('input[type="color"]');
+            const fontFamilySelect = document.getElementById('fontFamily');
+            const fontSizeSelect = document.getElementById('fontSize');
+            const headerFontSizeSelect = document.getElementById('headerFontSize');
+            const fontWeightSelect = document.getElementById('fontWeight');
+            const fontPreview = document.getElementById('fontPreview');
+            const headerPreview = document.getElementById('headerPreview');
+            const bodyPreview = document.getElementById('bodyPreview');
+            
+            // Color preview updates
+            colorInputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    const previewElement = document.getElementById('preview-' + this.id);
+                    if (previewElement) {
+                        previewElement.style.backgroundColor = this.value;
+                    }
+                    
+                    // Update CSS variables for live preview
+                    if (this.id === 'primary_color') {
+                        document.documentElement.style.setProperty('--primary-color', this.value);
+                    } else if (this.id === 'background_color') {
+                        document.documentElement.style.setProperty('--background-color', this.value);
+                        document.body.style.backgroundColor = this.value;
+                    } else if (this.id === 'text_color') {
+                        document.documentElement.style.setProperty('--text-color', this.value);
+                        document.body.style.color = this.value;
+                    }
+                });
+            });
+            
+            // Font family preview update
+            function updateFontPreview() {
+                const selectedFont = fontFamilySelect.value;
+                const selectedOption = fontFamilySelect.options[fontFamilySelect.selectedIndex];
+                const fontName = selectedOption.getAttribute('data-font') || selectedOption.text;
+                
+                // Update font preview box
+                if (fontPreview) {
+                    const previewText = fontPreview.querySelector('.preview-text');
+                    previewText.style.fontFamily = selectedFont;
+                    previewText.textContent = `${fontName} - The quick brown fox jumps over the lazy dog`;
+                }
+                
+                // Update typography preview
+                if (headerPreview && bodyPreview) {
+                    headerPreview.style.fontFamily = selectedFont;
+                    bodyPreview.style.fontFamily = selectedFont;
+                    document.documentElement.style.setProperty('--font-family', selectedFont);
+                    document.body.style.fontFamily = selectedFont;
+                }
+            }
+            
+            // Font size preview update
+            function updateFontSizePreview() {
+                const fontSize = fontSizeSelect.value;
+                const headerFontSize = headerFontSizeSelect.value;
+                const fontWeight = fontWeightSelect ? fontWeightSelect.value : '400';
+                
+                if (bodyPreview) {
+                    bodyPreview.style.fontSize = fontSize;
+                    bodyPreview.style.fontWeight = fontWeight;
+                    document.documentElement.style.setProperty('--font-size', fontSize);
+                }
+                
+                if (headerPreview) {
+                    headerPreview.style.fontSize = headerFontSize;
+                    headerPreview.style.fontWeight = fontWeight;
+                    document.documentElement.style.setProperty('--header-font-size', headerFontSize);
+                }
+                
+                // Update font preview box
+                if (fontPreview) {
+                    const previewText = fontPreview.querySelector('.preview-text');
+                    previewText.style.fontSize = fontSize;
+                    previewText.style.fontWeight = fontWeight;
+                }
+            }
+            
+            // Event listeners for font changes
+            if (fontFamilySelect) {
+                fontFamilySelect.addEventListener('change', updateFontPreview);
+            }
+            
+            if (fontSizeSelect) {
+                fontSizeSelect.addEventListener('change', updateFontSizePreview);
+            }
+            
+            if (headerFontSizeSelect) {
+                headerFontSizeSelect.addEventListener('change', updateFontSizePreview);
+            }
+            
+            if (fontWeightSelect) {
+                fontWeightSelect.addEventListener('change', updateFontSizePreview);
+            }
+            
+            // Initialize previews on page load
+            updateFontPreview();
+            updateFontSizePreview();
+            
+            // Style the font dropdown options
+            if (fontFamilySelect) {
+                const options = fontFamilySelect.options;
+                for (let i = 0; i < options.length; i++) {
+                    const option = options[i];
+                    if (option.value && option.getAttribute('data-font')) {
+                        option.style.fontFamily = option.value;
+                    }
+                }
+            }
+            
+            // Auto-dismiss alerts
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                setTimeout(function() {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }, 5000);
+            });
+        });
+        
+        // Change password function
+        function changePassword() {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // Validation
+            if (!currentPassword) {
+                alert('Please enter your current password.');
+                return;
+            }
+            
+            if (!newPassword) {
+                alert('Please enter a new password.');
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                alert('Password must be at least 6 characters long.');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                alert('New password and confirmation do not match.');
+                return;
+            }
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('current_password', currentPassword);
+            formData.append('new_password', newPassword);
+            formData.append('confirm_password', confirmPassword);
+            
+            // Send AJAX request
+            fetch('/change_password', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Password changed successfully!');
+                    // Clear password fields
+                    document.getElementById('currentPassword').value = '';
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('confirmPassword').value = '';
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while changing the password.');
+            });
+        }
+        
+        // Change user password function (admin only)
+        function changeUserPassword() {
+            const targetUser = document.getElementById('targetUser').value;
+            const userNewPassword = document.getElementById('userNewPassword').value;
+            const userConfirmPassword = document.getElementById('userConfirmPassword').value;
+            
+            // Validation
+            if (!targetUser) {
+                alert('Please select a user.');
+                return;
+            }
+            
+            if (!userNewPassword) {
+                alert('Please enter a new password for the user.');
+                return;
+            }
+            
+            if (userNewPassword.length < 6) {
+                alert('Password must be at least 6 characters long.');
+                return;
+            }
+            
+            if (userNewPassword !== userConfirmPassword) {
+                alert('New password and confirmation do not match.');
+                return;
+            }
+            
+            // Confirmation dialog
+            if (!confirm(`Are you sure you want to change the password for user "${targetUser}"? This action cannot be undone.`)) {
+                return;
+            }
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('target_user', targetUser);
+            formData.append('new_password', userNewPassword);
+            formData.append('confirm_password', userConfirmPassword);
+            
+            // Send AJAX request
+            fetch('/change_user_password', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Password for user "${targetUser}" changed successfully!`);
+                    // Clear password fields
+                    document.getElementById('targetUser').value = '';
+                    document.getElementById('userNewPassword').value = '';
+                    document.getElementById('userConfirmPassword').value = '';
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while changing the user password.');
+            });
+        }
+        
+        // ID Update Functions
+        function checkIdUpdateInfo() {
+            const button = event.target;
+            const originalText = button.innerHTML;
+            
+            // Show loading state
+            button.disabled = true;
+            button.innerHTML = '⏳ Checking...';
+            
+            fetch('/get_id_update_info')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayIdUpdateInfo(data);
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while checking ID update information.');
+                })
+                .finally(() => {
+                    // Restore button state
+                    button.disabled = false;
+                    button.innerHTML = originalText;
+                });
+        }
+        
+        function displayIdUpdateInfo(data) {
+            const previewContainer = document.getElementById('idUpdatePreview');
+            const previewContent = document.getElementById('previewContent');
+            const updateBtn = document.getElementById('updateIdsBtn');
+            
+            let content = '';
+            
+            // Show summary
+            content += `<div class="mb-3">`;
+            content += `<strong>📊 Summary:</strong><br>`;
+            content += `• Total Records: ${data.total_records}<br>`;
+            content += `• Records with Old Format: <span class="text-danger">${data.old_format_count}</span><br>`;
+            content += `• Records with New Format: <span class="text-success">${data.new_format_count}</span>`;
+            content += `</div>`;
+            
+            if (data.old_format_count > 0) {
+                content += `<div class="mb-3">`;
+                content += `<strong>🔍 Preview of Changes (First ${Math.min(data.preview.length, 10)} records):</strong>`;
+                content += `<div class="table-responsive mt-2">`;
+                content += `<table class="table table-sm">`;
+                content += `<thead><tr><th>Current ID</th><th>New ID</th></tr></thead>`;
+                content += `<tbody>`;
+                
+                data.preview.forEach(item => {
+                    content += `<tr>`;
+                    content += `<td><code class="text-danger">${item.old_id}</code></td>`;
+                    content += `<td><code class="text-success">${item.new_id}</code></td>`;
+                    content += `</tr>`;
+                });
+                
+                content += `</tbody></table></div></div>`;
+                
+                // Enable update button
+                updateBtn.disabled = false;
+                updateBtn.innerHTML = `🔄 Update ${data.old_format_count} Record ID${data.old_format_count > 1 ? 's' : ''}`;
+            } else {
+                content += `<div class="alert alert-success mb-0">`;
+                content += `✅ All records already use the new ID format. No updates needed!`;
+                content += `</div>`;
+                
+                // Disable update button
+                updateBtn.disabled = true;
+                updateBtn.innerHTML = '✅ All IDs Up to Date';
+            }
+            
+            previewContent.innerHTML = content;
+            previewContainer.classList.remove('d-none');
+        }
+        
+        function updateRecordIds() {
+            if (!confirm('Are you sure you want to update all record IDs to the new format? This action cannot be undone.')) {
+                return;
+            }
+            
+            const button = document.getElementById('updateIdsBtn');
+            const originalText = button.innerHTML;
+            
+            // Show loading state
+            button.disabled = true;
+            button.innerHTML = '⏳ Updating IDs...';
+            
+            fetch('/update_record_ids', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showUpdateResults(data);
+                        // Refresh the preview info
+                        setTimeout(() => {
+                            checkIdUpdateInfo();
+                        }, 1000);
+                    } else {
+                        alert('Error: ' + data.message);
+                        button.disabled = false;
+                        button.innerHTML = originalText;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while updating record IDs.');
+                    button.disabled = false;
+                    button.innerHTML = originalText;
+                });
+        }
+        
+        function showUpdateResults(data) {
+            let message = `✅ ID Update Completed Successfully!\n\n`;
+            message += `📊 Summary:\n`;
+            message += `• Records Updated: ${data.updated_count}\n`;
+            message += `• Time Taken: ${data.time_taken} seconds\n\n`;
+            
+            if (data.sample_updates && data.sample_updates.length > 0) {
+                message += `🔍 Sample Updates:\n`;
+                data.sample_updates.slice(0, 5).forEach((update, index) => {
+                    message += `${index + 1}. "${update.old_id}" → "${update.new_id}"\n`;
+                });
+                
+                if (data.sample_updates.length > 5) {
+                    message += `... and ${data.sample_updates.length - 5} more\n`;
+                }
+            }
+            
+            alert(message);
+        }
+    </script>
+</body>
+</html>

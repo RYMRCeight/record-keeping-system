@@ -1,0 +1,23 @@
+[
+  {
+    "id": "DOC_20250805_101434",
+    "date": "2025-01-01 09:00:00",
+    "sender": "John Smith",
+    "subject": "Invoice #12345",
+    "destination": "Accounting"
+  },
+  {
+    "id": "DOC_20250805_101434",
+    "date": "2025-01-01 10:30:00",
+    "sender": "Marketing Department",
+    "subject": "Monthly Report",
+    "destination": "Management"
+  },
+  {
+    "id": "DOC_20250805_101434",
+    "date": "2025-01-01 14:15:00",
+    "sender": "HR Department",
+    "subject": "Employee Contract",
+    "destination": "Legal Department"
+  }
+]

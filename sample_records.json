@@ -1,0 +1,30 @@
+[
+  {
+    "id": "DOC_20250805_094225",
+    "date": "2025-08-05 09:42:25",
+    "sender": "Mary Johnson",
+    "subject": "Project Proposal",
+    "destination": "Management Team"
+  },
+  {
+    "id": "DOC_20250805_094225",
+    "date": "2025-08-05 09:42:25",
+    "sender": "Bob Wilson",
+    "subject": "Technical Report",
+    "destination": "Engineering Team"
+  },
+  {
+    "id": "DOC_20250805_094225",
+    "date": "2025-08-05 09:42:25",
+    "sender": "Alice Brown",
+    "subject": "Budget Request",
+    "destination": "Finance Department"
+  },
+  {
+    "id": "DOC_20250805_094225",
+    "date": "2025-08-05 09:42:25",
+    "sender": "Tom Davis",
+    "subject": "Meeting Minutes",
+    "destination": "HR Department"
+  }
+]

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Edit Record - {{ system_settings.system_name }}</title>
+    <style>
+        :root {
+            --primary-color: {{ system_settings.theme.primary_color }};
+            --secondary-color: {{ system_settings.theme.secondary_color }};
+            --success-color: {{ system_settings.theme.success_color }};
+            --danger-color: {{ system_settings.theme.danger_color }};
+            --warning-color: {{ system_settings.theme.warning_color }};
+            --info-color: {{ system_settings.theme.info_color }};
+            --background-color: {{ system_settings.theme.background_color }};
+            --text-color: {{ system_settings.theme.text_color }};
+            --header-background: {{ system_settings.theme.header_background }};
+            --font-family: {{ system_settings.theme.font_family }};
+            --font-size: {{ system_settings.theme.font_size }};
+            --header-font-size: {{ system_settings.theme.header_font_size }};
+            --font-weight: {{ system_settings.theme.get('font_weight', '400') }};
+        }
+        
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
+            font-size: var(--font-size);
+            font-weight: var(--font-weight);
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-family);
+            color: var(--text-color);
+        }
+        
+        h1 {
+            font-size: var(--header-font-size);
+            color: var(--primary-color);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+            border-color: var(--warning-color);
+        }
+        
+        .btn-info {
+            background-color: var(--info-color);
+            border-color: var(--info-color);
+        }
+        
+        .badge.bg-primary {
+            background-color: var(--primary-color) !important;
+        }
+        
+        .badge.bg-success {
+            background-color: var(--success-color) !important;
+        }
+        
+        .badge.bg-warning {
+            background-color: var(--warning-color) !important;
+        }
+        
+        .card-header {
+            background-color: var(--primary-color);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container mt-5" style="max-width: 800px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>✏️ Edit Record</h1>
+        <div class="user-info">
+            <span class="badge bg-{{ 'success' if user_role == 'admin' else 'primary' }} me-2">
+                👤 {{ session.username }} ({{ session.role.title() if session.role else 'User' }})
+            </span>
+            <a href="/" class="btn btn-outline-secondary btn-sm">
+                ← Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Current Record Info -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">🆔 Current Record: {{ record.id }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>📅 Date:</strong> {{ record.date }}</p>
+                    <p><strong>📤 Sender:</strong> {{ record.sender }}</p>
+                    <p><strong>📍 Destination:</strong> {{ record.destination or 'None' }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>📋 Status:</strong> 
+                        <span class="badge bg-{{ 'success' if record.status == 'Completed' else 'warning' if record.status == 'Pending' else 'secondary' }}">
+                            {{ '✅' if record.status == 'Completed' else '⏳' }} {{ record.status }}
+                        </span>
+                    </p>
+                    <p><strong>📄 Subject:</strong></p>
+                    <div class="border p-2 bg-light rounded">
+                        <small>{{ record.subject }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Form -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">✏️ Edit Record Details</h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                <div class="row g-3">
+                    <!-- Sender -->
+                    <div class="col-md-6">
+                        <label for="sender" class="form-label">📤 Sender *</label>
+                        <input type="text" class="form-control" id="sender" name="sender" 
+                               value="{{ record.sender }}" required>
+                        <div class="form-text">Who sent this document</div>
+                    </div>
+
+                    <!-- Destination -->
+                    <div class="col-md-6">
+                        <label for="destination" class="form-label">📍 Destination</label>
+                        <input type="text" class="form-control" id="destination" name="destination" 
+                               value="{{ record.destination }}" placeholder="Leave blank if none">
+                        <div class="form-text">Where the document is going</div>
+                    </div>
+
+                    <!-- Subject -->
+                    <div class="col-12">
+                        <label for="subject" class="form-label">📄 Subject *</label>
+                        <textarea class="form-control" id="subject" name="subject" rows="3" required>{{ record.subject }}</textarea>
+                        <div class="form-text">Document title or description</div>
+                    </div>
+
+                    <!-- Date -->
+                    <div class="col-md-6">
+                        <label for="date" class="form-label">📅 Date</label>
+                        <div class="input-group">
+                            <input type="date" class="form-control" id="dateInput" name="date_picker" 
+                                   value="{{ record.date.split(' ')[0] if record.date and record.date != 'No Date' else '' }}">
+                            <input type="time" class="form-control" id="timeInput" name="time_picker" 
+                                   value="{{ record.date.split(' ')[1] if record.date and ' ' in record.date and record.date != 'No Date' else '' }}">
+                            <button class="btn btn-outline-secondary" type="button" id="clearDateTime" title="Clear date and time">
+                                🗑️
+                            </button>
+                        </div>
+                        <input type="hidden" id="date" name="date" value="{{ record.date }}">
+                        <div class="form-text">Select date and optionally time, or leave blank to keep current</div>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="col-md-6">
+                        <label for="status" class="form-label">📋 Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="Pending" {{ 'selected' if record.status == 'Pending' else '' }}>⏳ Pending</option>
+                            <option value="Completed" {{ 'selected' if record.status == 'Completed' else '' }}>✅ Completed</option>
+                        </select>
+                        <div class="form-text">Current processing status</div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <a href="/" class="btn btn-secondary">
+                            ❌ Cancel
+                        </a>
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            💾 Save Changes
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Help Section -->
+    <div class="card mt-4">
+        <div class="card-body">
+            <h6>💡 Editing Tips:</h6>
+            <ul class="mb-0 small text-muted">
+                <li><strong>Required fields:</strong> Sender and Subject must be filled</li>
+                <li><strong>Date format:</strong> Use YYYY-MM-DD (e.g., 2025-01-07) or YYYY-MM-DD HH:MM:SS</li>
+                <li><strong>Status:</strong> Choose from Pending or Completed</li>
+                <li><strong>Cancel:</strong> Click Cancel or Back to Dashboard to discard changes</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Auto-dismiss alerts after 5 seconds
+document.addEventListener('DOMContentLoaded', function() {
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(function(alert) {
+        setTimeout(function() {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        }, 5000);
+    });
+
+    // Focus on first input
+    document.getElementById('sender').focus();
+});
+
+// Confirm navigation away with unsaved changes
+let formChanged = false;
+const form = document.querySelector('form');
+const originalData = new FormData(form);
+
+form.addEventListener('input', function() {
+    formChanged = true;
+});
+
+window.addEventListener('beforeunload', function(e) {
+    if (formChanged) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+
+// Don't show warning when submitting form
+form.addEventListener('submit', function() {
+    formChanged = false;
+});
+
+// Date picker functionality
+const dateInput = document.getElementById('dateInput');
+const timeInput = document.getElementById('timeInput');
+const hiddenDateInput = document.getElementById('date');
+const clearButton = document.getElementById('clearDateTime');
+
+// Function to update hidden date field
+function updateHiddenDate() {
+    const dateValue = dateInput.value;
+    const timeValue = timeInput.value;
+    
+    if (!dateValue) {
+        hiddenDateInput.value = '';
+        return;
+    }
+    
+    if (timeValue) {
+        // Combine date and time: "2025-01-07 14:30:00"
+        hiddenDateInput.value = `${dateValue} ${timeValue}:00`;
+    } else {
+        // Date only: "2025-01-07"
+        hiddenDateInput.value = dateValue;
+    }
+}
+
+// Update hidden field when date or time changes
+dateInput.addEventListener('change', updateHiddenDate);
+timeInput.addEventListener('change', updateHiddenDate);
+
+// Clear date and time
+clearButton.addEventListener('click', function() {
+    dateInput.value = '';
+    timeInput.value = '';
+    hiddenDateInput.value = '';
+    formChanged = true;
+});
+
+// Set today's date button functionality
+const setTodayBtn = document.createElement('button');
+setTodayBtn.type = 'button';
+setTodayBtn.className = 'btn btn-outline-primary';
+setTodayBtn.innerHTML = '📅 Today';
+setTodayBtn.title = 'Set to today\'s date';
+setTodayBtn.addEventListener('click', function() {
+    const today = new Date();
+    const todayStr = today.getFullYear() + '-' + 
+                    String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                    String(today.getDate()).padStart(2, '0');
+    dateInput.value = todayStr;
+    updateHiddenDate();
+    formChanged = true;
+});
+
+// Insert "Today" button after the clear button
+clearButton.parentNode.insertBefore(setTodayBtn, clearButton.nextSibling);
+
+// Initialize hidden field on page load
+updateHiddenDate();
+</script>
+</body>
+</html>

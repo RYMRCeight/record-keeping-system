@@ -1,0 +1,34 @@
+{
+  "system": {
+    "platform": "windows",
+    "data_directory": "./data",
+    "upload_directory": "./uploads",
+    "export_directory": "./exports",
+    "max_file_size": "50MB",
+    "allowed_extensions": [
+      ".xlsx",
+      ".xls",
+      ".pdf",
+      ".docx",
+      ".jpg",
+      ".png"
+    ]
+  },
+  "database": {
+    "type": "json",
+    "file": "./data/records.json",
+    "backup_enabled": true,
+    "backup_interval": "daily"
+  },
+  "security": {
+    "enable_encryption": false,
+    "session_timeout": 3600,
+    "max_login_attempts": 5
+  },
+  "features": {
+    "enable_ocr": false,
+    "enable_barcode": true,
+    "enable_notifications": true,
+    "enable_backup": true
+  }
+}

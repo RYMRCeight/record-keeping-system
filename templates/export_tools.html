@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Export & Backup Tools</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-4">
+    <div class="text-center mb-4">
+        <h2>Export & Backup Tools</h2>
+        <p>Manage your data exports and system backups</p>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <div class="row g-4">
+        <!-- Export Data Section -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5><i class="bi bi-download"></i> Export Data</h5>
+                </div>
+                <div class="card-body">
+                    {% if total_records > 0 %}
+                        <p>Export your records in various formats:</p>
+                        <div class="d-grid gap-2">
+                            <a href="/export/excel" class="btn btn-success">
+                                <i class="bi bi-file-earmark-excel"></i> Export to Excel (.xlsx)
+                            </a>
+                            <a href="/export/csv" class="btn btn-warning">
+                                <i class="bi bi-file-earmark-text"></i> Export to CSV (.csv)
+                            </a>
+                            <a href="/export/json" class="btn btn-secondary">
+                                <i class="bi bi-file-earmark-code"></i> Export to JSON (.json)
+                            </a>
+                        </div>
+                        <small class="text-muted mt-2 d-block">
+                            Total records to export: {{ total_records }}
+                        </small>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> No records available to export.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Backup Section -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5><i class="bi bi-archive"></i> System Backup</h5>
+                </div>
+                <div class="card-body">
+                    {% if total_records > 0 %}
+                        <p>Create comprehensive system backups:</p>
+                        <div class="d-grid gap-2">
+                            <a href="/export/backup" class="btn btn-primary">
+                                <i class="bi bi-cloud-download"></i> Create Full Backup
+                            </a>
+                        </div>
+                        <small class="text-muted mt-2 d-block">
+                            Includes all records, metadata, and statistics
+                        </small>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> No data available to backup.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Restore Backup Section -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5><i class="bi bi-upload"></i> Restore Backup</h5>
+                </div>
+                <div class="card-body">
+                    <form action="/restore_backup" method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="backup_file" class="form-label">Select Backup File</label>
+                            <input type="file" name="backup_file" id="backup_file" class="form-control" accept=".json" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="restore_mode" class="form-label">Restore Mode</label>
+                            <select name="restore_mode" id="restore_mode" class="form-select">
+                                <option value="replace" selected>🔄 Replace All Existing Records</option>
+                                <option value="append">📁 Append to Existing Records</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-danger w-100" onclick="return confirm('Are you sure? This action cannot be undone.')">
+                            <i class="bi bi-cloud-upload"></i> Restore Backup
+                        </button>
+                    </form>
+                    <small class="text-muted mt-2 d-block">
+                        ⚠️ Replace mode will overwrite all current data
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Section -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5><i class="bi bi-file-text"></i> Reports</h5>
+                </div>
+                <div class="card-body">
+                    <p>Generate comprehensive reports:</p>
+                    <div class="d-grid gap-2">
+                        <a href="/report" class="btn btn-info" target="_blank">
+                            <i class="bi bi-file-earmark-pdf"></i> Generate HTML Report
+                        </a>
+                        <a href="/analytics" class="btn btn-outline-info">
+                            <i class="bi bi-graph-up"></i> View Analytics Dashboard
+                        </a>
+                    </div>
+                    <small class="text-muted mt-2 d-block">
+                        Reports include statistics and detailed record listings
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Summary -->
+    {% if statistics %}
+    <div class="mt-5">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-bar-chart"></i> Current System Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h4 class="text-primary">{{ statistics.total_records }}</h4>
+                        <p class="mb-0 text-muted">Total Records</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-success">{{ statistics.completed_count }}</h4>
+                        <p class="mb-0 text-muted">Completed</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-warning">{{ statistics.pending_count }}</h4>
+                        <p class="mb-0 text-muted">Pending</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-info">{{ statistics.unique_senders }}</h4>
+                        <p class="mb-0 text-muted">Unique Senders</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Navigation -->
+    <div class="mt-4 text-center">
+        <a href="/" class="btn btn-outline-primary">
+            <i class="bi bi-house"></i> Back to Dashboard
+        </a>
+        <a href="/records" class="btn btn-outline-secondary">
+            <i class="bi bi-journal-richtext"></i> View Records
+        </a>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

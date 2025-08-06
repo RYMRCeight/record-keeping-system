@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/modern-blue-yellow.css') }}" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css" rel="stylesheet">
+    <title>{{ system_settings.system_name }}</title>
+</head>
+<body>
+
+<!-- Modern Navigation Header -->
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container-fluid">
+        <!-- Brand -->
+        <a class="navbar-brand d-flex flex-column align-items-start" href="/">
+            <span style="font-size: 2rem; font-weight: 600;">Mayor's Office - Record Logging System</span>
+            <span style="font-size: 1.5rem; font-style: italic; opacity: 0.8;">Developed by Reymarc Jason Tampos</span>
+        </a>
+
+        <!-- Toggle button for mobile -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Navigation items -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <!-- Empty space for better layout -->
+            </ul>
+            
+            <!-- User info and actions -->
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <span class="nav-link">
+                        <span class="badge" style="background: linear-gradient(135deg, var(--accent-yellow), var(--dark-yellow)); color: var(--text-primary);">
+                            <i class="bi bi-person-circle"></i>
+                            {{ session.username }} ({{ user_role.title() }})
+                        </span>
+                    </span>
+                </li>
+                {% if user_role == 'admin' %}
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/settings">
+                        <i class="bi bi-gear"></i> Settings
+                    </a>
+                </li>
+                {% endif %}
+                <li class="nav-item">
+                    <a class="nav-link" href="/logout">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <div class="nav-link text-center" style="color: var(--accent-yellow); font-size: 0.9rem; line-height: 1.2;">
+                        <div><i class="bi bi-clock"></i> Philippine Time</div>
+                        <div id="pst-clock" style="font-weight: 600; font-size: 1rem;">--:--:-- --</div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+
+<div class="container-fluid mt-4" style="max-width: 1400px;">
+    <div class="mt-4">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert" 
+                 data-category="{{ category }}">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- Add Record Form -->
+        <form action="/add" method="post" class="row g-3">
+            <div class="col-md-2">
+                <input type="text" name="sender" class="form-control" placeholder="Sender" required>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="subject" class="form-control" placeholder="Subject" required>
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="destination" class="form-control" placeholder="Destination">
+            </div>
+            <div class="col-md-2">
+                <div class="input-group">
+                    <input type="date" class="form-control" id="addDateInput" name="date_picker" title="Optional date">
+                    <button class="btn btn-outline-secondary" type="button" id="setTodayAdd" title="Set today's date">📅</button>
+                </div>
+                <input type="hidden" id="addDate" name="date">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary">➕ Add Record</button>
+            </div>
+        </form>
+    </div>
+    <!-- Search and Filter Bar -->
+    <div class="mt-4">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="input-group">
+                    <span class="input-group-text">🔍</span>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search records by ID, date, sender, subject, or destination..." autocomplete="off">
+                    <button class="btn btn-outline-secondary" type="button" id="clearSearch">Clear</button>
+                </div>
+                <small class="text-muted">Type and click Search, or search results update as you type</small>
+            </div>
+            <div class="col-md-4">
+                <div id="searchStats" class="text-end pt-2">
+                    <span class="badge bg-primary" id="recordCount">{{ records|length }} records</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Filter and Sort Controls -->
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">📊 Filter & Sort</h6>
+                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filterControls" aria-expanded="false">
+                                <span id="filterToggleIcon">▼</span> Show Filters
+                            </button>
+                        </div>
+                    </div>
+                    <div class="collapse" id="filterControls">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <!-- Date Range Filter -->
+                                <div class="col-md-3">
+                                    <label class="form-label">📅 Date Range</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="date" id="dateFrom" class="form-control" title="From date">
+                                        <span class="input-group-text">to</span>
+                                        <input type="date" id="dateTo" class="form-control" title="To date">
+                                    </div>
+                                </div>
+                                
+                                <!-- Status Filter -->
+                                <div class="col-md-2">
+                                    <label class="form-label">📋 Status</label>
+                                    <select id="statusFilter" class="form-select form-select-sm">
+                                        <option value="">All Status</option>
+                                        <option value="Pending">⏳ Pending</option>
+                                        <option value="Completed">✅ Completed</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Sender Filter -->
+                                <div class="col-md-2">
+                                    <label class="form-label">👤 Sender</label>
+                                    <select id="senderFilter" class="form-select form-select-sm">
+                                        <option value="">All Senders</option>
+                                        <!-- Options will be populated dynamically -->
+                                    </select>
+                                </div>
+                                
+                                <!-- Sort Options -->
+                                <div class="col-md-2">
+                                    <label class="form-label">🔄 Sort By</label>
+                                    <select id="sortBy" class="form-select form-select-sm">
+                                        <option value="date">📅 Date</option>
+                                        <option value="id">🆔 ID</option>
+                                        <option value="sender">👤 Sender</option>
+                                        <option value="subject">📝 Subject</option>
+                                        <option value="destination">📍 Destination</option>
+                                        <option value="status">📋 Status</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Sort Direction -->
+                                <div class="col-md-2">
+                                    <label class="form-label">📶 Order</label>
+                                    <select id="sortOrder" class="form-select form-select-sm">
+                                        <option value="desc">⬇️ Newest First</option>
+                                        <option value="asc">⬆️ Oldest First</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Action Buttons -->
+                                <div class="col-md-1">
+                                    <label class="form-label">&nbsp;</label>
+                                    <div class="d-grid">
+                                        <button class="btn btn-sm btn-outline-danger" type="button" id="clearFilters" title="Clear all filters">
+                                            🗑️
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Records Table -->
+    <div class="mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>Records</h2>
+            <!-- Bulk Actions Controls -->
+            <div id="bulkActionsContainer" class="d-none">
+                <form id="bulkActionForm" action="/bulk_action" method="post" class="d-flex align-items-center gap-2">
+                    <span class="badge bg-info" id="selectedCount">0 selected</span>
+                    <select name="action" class="form-select form-select-sm" style="width: auto;" required>
+                        <option value="">Choose Action...</option>
+                        <option value="mark_completed">✅ Mark Completed</option>
+                        <option value="mark_pending">⏳ Mark Pending</option>
+                        {% if user_role == 'admin' %}
+                        <option value="delete">🗑️ Delete</option>
+                        {% endif %}
+                    </select>
+                    <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="clearSelection">Clear</button>
+                </form>
+            </div>
+        </div>
+        {% if records %}
+            <!-- Scrollable table container -->
+            <div class="table-responsive" style="max-height: 600px; overflow: auto; border: 1px solid #dee2e6; border-radius: 0.375rem;">
+                <table class="table table-striped table-hover mb-0" style="white-space: nowrap;">
+                    <thead class="table-dark sticky-top">
+                        <tr>
+                            <th style="padding: 8px; font-size: 12px;">
+                                <input type="checkbox" id="selectAll" class="form-check-input" title="Select All">
+                            </th>
+                            <th style="padding: 8px; font-size: 12px;">ID</th>
+                            <th style="padding: 8px; font-size: 12px;">Date</th>
+                            <th style="padding: 8px; font-size: 12px;">Sender</th>
+                            <th style="padding: 8px; font-size: 12px;">Subject</th>
+                            <th style="padding: 8px; font-size: 12px;">Destination</th>
+                            <th style="padding: 8px; font-size: 12px;">Status</th>
+                            <th style="padding: 8px; font-size: 12px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for record in records %}
+                        <tr>
+                            <td style="padding: 8px; font-size: 12px;">
+                                <input type="checkbox" class="form-check-input record-checkbox" value="{{ record.id }}" name="record_ids">
+                            </td>
+                            <td style="padding: 8px; font-size: 11px;">{{ record.id }}</td>
+                            <td style="padding: 8px; font-size: 11px;">{{ record.date }}</td>
+                            <td style="padding: 8px; font-size: 11px;">{{ record.sender }}</td>
+                            <td style="padding: 8px; font-size: 11px;">{{ record.subject }}</td>
+                            <td style="padding: 8px; font-size: 11px;">{{ record.destination }}</td>
+                            <td style="padding: 8px; font-size: 10px; text-align: center;" class="{% if record.status == 'Pending' %}table-warning{% else %}table-success{% endif %}">
+                                <span class="badge {% if record.status == 'Pending' %}bg-warning text-dark{% else %}bg-success{% endif %}" style="font-size: 10px; padding: 3px 6px;">
+                                    {{ '⏳' if record.status == 'Pending' else '✅' }} {{ record.status }}
+                                </span>
+                            </td>
+                            <td style="padding: 6px; text-align: center;">
+                                <div class="btn-group" role="group">
+                                    <a href="/edit/{{ record.id }}" class="btn btn-primary btn-sm" style="font-size: 10px; padding: 4px 8px;" title="Edit">✏️</a>
+                                    {% if user_role == 'admin' %}
+                                    <a href="/delete/{{ record.id }}" class="btn btn-danger btn-sm" style="font-size: 10px; padding: 4px 8px;" title="Delete"
+                                       onclick="return confirm('Are you sure you want to delete this record?')">🗑️</a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Table info -->
+            <div class="mt-2">
+                <small class="text-muted">
+                    💡 <strong>Tip:</strong> Table shows full content without wrapping. Scroll horizontally and vertically to view all data.
+                </small>
+            </div>
+        {% else %}
+            <div class="alert alert-info" role="alert">
+                <h4 class="alert-heading">No Records Found</h4>
+                <p>You haven't added any records yet. Use the form above to add your first record to the system.</p>
+                <hr>
+                <p class="mb-0">You can also import records from an Excel file using the import feature below.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Export and Import Section -->
+    <div class="mt-4">
+        <div class="row">
+            <div class="col-md-8">
+                <h4>Export Data</h4>
+                {% if records %}
+                    <div class="btn-group mb-2" role="group">
+                        <a href="/export/excel" class="btn btn-success">📊 Excel (.xlsx)</a>
+                        <a href="/export/csv" class="btn btn-warning">📋 CSV (.csv)</a>
+                        <a href="/export/json" class="btn btn-secondary">🔧 JSON (.json)</a>
+                    </div>
+                    <div class="mt-2">
+                        <a href="/report" class="btn btn-info btn-sm" target="_blank">
+                            📊 Generate Report
+                        </a>
+                    </div>
+                    <p class="text-muted mt-2">Files will be saved to the uploads folder</p>
+                {% else %}
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-success" disabled title="No records to export">📊 Excel (.xlsx)</button>
+                        <button class="btn btn-warning" disabled title="No records to export">📋 CSV (.csv)</button>
+                        <button class="btn btn-secondary" disabled title="No records to export">🔧 JSON (.json)</button>
+                    </div>
+                    <div class="mt-2">
+                        <a href="/report" class="btn btn-info btn-sm" target="_blank">
+                            📊 Generate Report
+                        </a>
+                    </div>
+                    <p class="text-muted mt-2">No records available to export</p>
+                {% endif %}
+            </div>
+            <div class="col-md-4">
+                <h4>Import Data</h4>
+<form action="/upload" method="post" enctype="multipart/form-data">
+                        <div class="mb-2">
+                            <input type="file" name="file" class="form-control" accept=".xlsx,.xls" required>
+                        </div>
+                        <div class="mb-2">
+                            <select name="import_mode" class="form-select">
+                                <option value="append" selected>📁 Append to Existing Records</option>
+                                {% if user_role == 'admin' %}
+                                <option value="replace">🔄 Replace All Existing Records</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                        <button class="btn btn-primary w-100" type="submit">📤 Import Excel</button>
+                        <small class="text-muted d-block mt-1">
+                            💡 {{ "Append adds new records without affecting existing ones" if user_role != 'admin' else "Append adds new records; Replace removes all existing records first" }}
+                        </small>
+                    </form>
+                </div>
+                
+                {% if user_role == 'admin' %}
+                <div class="col-md-4 mt-3">
+                <h4>Restore Backup</h4>
+                <form action="/restore_backup" method="post" enctype="multipart/form-data">
+                    <div class="mb-2">
+                        <input type="file" name="backup_file" class="form-control" accept=".json" required>
+                    </div>
+                    <div class="mb-2">
+                        <select name="restore_mode" class="form-select">
+                            <option value="replace" selected>🔄 Replace All Existing Records</option>
+                            <option value="append">📁 Append to Existing Records</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-danger w-100" type="submit">🗄️ Restore Backup</button>
+                    <small class="text-muted d-block mt-1">
+                        💡 Replace will overwrite all current records. Append will add backup records to current data.
+                    </small>
+                    <div class="mt-2">
+                        <a href="/export/backup" class="btn btn-warning btn-sm">
+                            💾 Create Backup
+                        </a>
+                    </div>
+                </form>
+                </div>
+                {% endif %}
+        </div>
+    </div>
+
+    <!-- Statistics Section -->
+    {% if user_role == 'admin' and statistics %}
+    <div class="mt-4">
+        <h2>Statistics</h2>
+        <ul class="list-group">
+            <li class="list-group-item">Total Records: {{ statistics.total_records }}</li>
+            <li class="list-group-item">Unique Senders: {{ statistics.unique_senders }}</li>
+            <li class="list-group-item">Unique Destinations: {{ statistics.unique_destinations }}</li>
+        </ul>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Footer -->
+<footer class="mt-5 py-4 text-center" style="background-color: var(--header-background); border-top: 1px solid var(--primary-color);">
+    <div class="container">
+        <p class="text-muted mb-0">{{ system_settings.branding.footer_text }}</p>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Auto-dismiss success messages after 5 seconds
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-dismiss success messages
+    const alerts = document.querySelectorAll('.alert[data-category="success"]');
+    alerts.forEach(function(alert) {
+        // Add a visual countdown indicator
+        const progressBar = document.createElement('div');
+        progressBar.className = 'progress mt-2';
+        progressBar.style.height = '3px';
+        progressBar.innerHTML = '<div class="progress-bar bg-success" role="progressbar" style="width: 100%; transition: width 5s linear;"></div>';
+        alert.appendChild(progressBar);
+        
+        // Start the countdown animation
+        setTimeout(() => {
+            const bar = progressBar.querySelector('.progress-bar');
+            bar.style.width = '0%';
+        }, 100); // Small delay to ensure animation works
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(function() {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        }, 5000);
+    });
+});
+
+// Bulk records selection and action
+function setupBulkActions() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const recordCheckboxes = document.querySelectorAll('.record-checkbox');
+    const bulkActionsContainer = document.getElementById('bulkActionsContainer');
+    const selectedCountSpan = document.getElementById('selectedCount');
+    const clearSelectionButton = document.getElementById('clearSelection');
+    const bulkActionForm = document.getElementById('bulkActionForm');
+    
+    function updateSelectedCount() {
+        const selectedCount = document.querySelectorAll('.record-checkbox:checked').length;
+        selectedCountSpan.textContent = `${selectedCount} selected`;
+        bulkActionsContainer.classList.toggle('d-none', selectedCount === 0);
+    }
+
+    // Select/deselect all records
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            recordCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateSelectedCount();
+        });
+    }
+
+    // Update count when individual record is checked/unchecked
+    recordCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectedCount);
+    });
+
+    // Clear selection
+    if (clearSelectionButton) {
+        clearSelectionButton.addEventListener('click', function() {
+            if (selectAllCheckbox) selectAllCheckbox.checked = false;
+            recordCheckboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            updateSelectedCount();
+        });
+    }
+    
+    // Handle form submission
+    if (bulkActionForm) {
+        bulkActionForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const selectedCheckboxes = document.querySelectorAll('.record-checkbox:checked');
+            const action = this.querySelector('select[name="action"]').value;
+            
+            if (selectedCheckboxes.length === 0) {
+                alert('Please select at least one record.');
+                return;
+            }
+            
+            if (!action) {
+                alert('Please select an action.');
+                return;
+            }
+            
+            // Confirm destructive actions
+            if (action === 'delete') {
+                if (!confirm(`Are you sure you want to delete ${selectedCheckboxes.length} record(s)? This action cannot be undone.`)) {
+                    return;
+                }
+            }
+            
+            // Create form data with selected record IDs
+            const formData = new FormData();
+            formData.append('action', action);
+            
+            selectedCheckboxes.forEach(checkbox => {
+                formData.append('record_ids', checkbox.value);
+            });
+            
+            // Submit the form
+            fetch('/bulk_action', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Reload the page to see changes
+                    window.location.reload();
+                } else {
+                    throw new Error('Network response was not ok');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while performing the bulk action.');
+            });
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded - JavaScript is running');
+    
+    // Initialize bulk actions
+    setupBulkActions();
+    
+    // Real-time search functionality
+    const searchInput = document.getElementById('searchInput');
+    const searchButton = document.getElementById('searchButton');
+    const clearButton = document.getElementById('clearSearch');
+    const recordCount = document.getElementById('recordCount');
+    const recordsTable = document.querySelector('table tbody');
+    const noRecordsAlert = document.querySelector('.alert-info');
+    
+    console.log('Search elements found:', {
+        searchInput: !!searchInput,
+        searchButton: !!searchButton,
+        clearButton: !!clearButton,
+        recordCount: !!recordCount,
+        recordsTable: !!recordsTable
+    });
+    
+    let searchTimeout;
+    
+    // Search function
+    function performSearch(query) {
+        console.log('Performing search with query:', query);
+        
+        // Show loading state
+        recordCount.textContent = 'Searching...';
+        recordCount.className = 'badge bg-warning';
+        
+        // Make API call to search endpoint (using debug endpoint for troubleshooting)
+        fetch(`/debug_search?q=${encodeURIComponent(query)}`)
+            .then(response => {
+                console.log('Search response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Search data received:', data);
+                updateTable(data.records, data.count, query);
+            })
+            .catch(error => {
+                console.error('Search error:', error);
+                recordCount.textContent = 'Search error';
+                recordCount.className = 'badge bg-danger';
+            });
+    }
+    
+    // Update table with search results
+    function updateTable(records, count, query) {
+        if (recordsTable) {
+            // Clear existing rows
+            recordsTable.innerHTML = '';
+            
+            if (records.length === 0) {
+                // Show no results message
+                recordsTable.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center text-muted">
+                            ${query ? `No records found for "${query}"` : 'No records found'}
+                        </td>
+                    </tr>
+                `;
+                recordCount.textContent = '0 records';
+                recordCount.className = 'badge bg-secondary';
+            } else {
+                // Populate table with results
+                records.forEach(record => {
+                    const row = document.createElement('tr');
+                    
+                    // Highlight search terms
+                    const highlightText = (text, query) => {
+                        if (!query) return text;
+                        const regex = new RegExp(`(${query})`, 'gi');
+                        return text.replace(regex, '<mark>$1</mark>');
+                    };
+                    
+                    const statusClass = record.status === 'Pending' ? 'table-warning' : 'table-success';
+                    const badgeClass = record.status === 'Pending' ? 'bg-warning text-dark' : 'bg-success';
+                    const statusIcon = record.status === 'Pending' ? '⏳' : '✅';
+                    
+                    // Get user role from the page context
+                    const userRole = '{{ user_role }}';
+                    
+                    // Build actions HTML based on user role
+                    let actionsHTML = `<a href="/edit/${record.id}" class="btn btn-primary btn-sm flex-fill">✏️ Edit</a>`;
+                    if (userRole === 'admin') {
+                        actionsHTML += `<a href="/delete/${record.id}" class="btn btn-danger btn-sm flex-fill" 
+                                           onclick="return confirm('Are you sure you want to delete this record?')">🗑️ Delete</a>`;
+                    }
+                    
+                    row.innerHTML = `
+                        <td>
+                            <input type="checkbox" class="form-check-input record-checkbox" value="${record.id}" name="record_ids">
+                        </td>
+                        <td class="text-nowrap">${highlightText(record.id, query)}</td>
+                        <td class="text-nowrap">${highlightText(record.date, query)}</td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 150px;" title="${record.sender}">
+                                ${highlightText(record.sender, query)}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 300px;" title="${record.subject}">
+                                ${highlightText(record.subject, query)}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 150px;" title="${record.destination}">
+                                ${highlightText(record.destination, query)}
+                            </div>
+                        </td>
+                        <td class="${statusClass}">
+                            <span class="badge ${badgeClass}">
+                                ${statusIcon} ${record.status}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group d-flex" role="group">
+                                ${actionsHTML}
+                            </div>
+                        </td>
+                    `;
+                    recordsTable.appendChild(row);
+                });
+                
+                recordCount.textContent = `${count} record${count !== 1 ? 's' : ''}`;
+                recordCount.className = count > 0 ? 'badge bg-success' : 'badge bg-secondary';
+            }
+            
+            // Reinitialize bulk actions for new checkboxes
+            setupBulkActions();
+        }
+    }
+    
+    // Search input event listener
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const query = this.value.trim();
+            
+            // Clear previous timeout
+            clearTimeout(searchTimeout);
+            
+            // Set new timeout for debouncing (300ms delay)
+            searchTimeout = setTimeout(() => {
+                performSearch(query);
+            }, 300);
+        });
+        
+        // Handle Enter key
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                clearTimeout(searchTimeout);
+                performSearch(this.value.trim());
+            }
+        });
+    }
+    
+    // Search button functionality
+    if (searchButton) {
+        console.log('Adding click event listener to search button');
+        
+        // Add immediate visual feedback
+        searchButton.addEventListener('click', function(event) {
+            alert('Search button clicked! Check console for details.');
+            console.log('Search button clicked! Event:', event);
+            event.preventDefault(); // Prevent any default action
+            
+            if (!searchInput) {
+                console.error('Search input not found!');
+                alert('Error: Search input not found!');
+                return;
+            }
+            
+            const query = searchInput.value.trim();
+            console.log('Search query:', query);
+            alert(`Searching for: "${query}"`);
+            
+            clearTimeout(searchTimeout); // Cancel any pending auto-search
+            performSearch(query);
+        });
+        
+        // Also try using onclick as a fallback
+        searchButton.onclick = function(event) {
+            console.log('Search button onclick triggered!');
+            event.preventDefault();
+            
+            const query = searchInput ? searchInput.value.trim() : '';
+            console.log('Onclick search query:', query);
+            
+            clearTimeout(searchTimeout);
+            performSearch(query);
+        };
+    } else {
+        console.error('Search button not found! ID: searchButton');
+    }
+    
+    // Clear search functionality
+    if (clearButton) {
+        clearButton.addEventListener('click', function() {
+            searchInput.value = '';
+            clearTimeout(searchTimeout);
+            performSearch(''); // Reset to show all records
+            searchInput.focus();
+        });
+    }
+    
+    // Focus search input with Ctrl+F or Cmd+F
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.select();
+            }
+        }
+        
+        // ESC to clear search
+        if (e.key === 'Escape' && searchInput && searchInput.value) {
+            searchInput.value = '';
+            performSearch('');
+        }
+    });
+    
+    // Date picker functionality for Add Record form
+    const addDateInput = document.getElementById('addDateInput');
+    const addHiddenDate = document.getElementById('addDate');
+    const setTodayAddBtn = document.getElementById('setTodayAdd');
+    
+    // Update hidden field when date changes
+    if (addDateInput) {
+        addDateInput.addEventListener('change', function() {
+            addHiddenDate.value = this.value;
+        });
+    }
+    
+    // Set today's date for add form
+    if (setTodayAddBtn) {
+        setTodayAddBtn.addEventListener('click', function() {
+            const today = new Date();
+            const todayStr = today.getFullYear() + '-' + 
+                            String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                            String(today.getDate()).padStart(2, '0');
+            addDateInput.value = todayStr;
+            addHiddenDate.value = todayStr;
+        });
+    }
+    
+    // Real-time updates using Server-Sent Events (SSE)
+    let eventSource;
+    
+    function initializeSSE() {
+        // Close existing connection if any
+        if (eventSource) {
+            eventSource.close();
+        }
+        
+        // Create new SSE connection
+        eventSource = new EventSource('/events');
+        
+        eventSource.onopen = function(event) {
+            console.log('SSE connection opened');
+            showRealTimeStatus('Connected', 'success');
+        };
+        
+        eventSource.onmessage = function(event) {
+            try {
+                const update = JSON.parse(event.data);
+                handleRealTimeUpdate(update);
+            } catch (error) {
+                console.error('Error parsing SSE message:', error);
+            }
+        };
+        
+        eventSource.onerror = function(event) {
+            console.log('SSE connection error:', event);
+            showRealTimeStatus('Disconnected', 'danger');
+            
+            // Attempt to reconnect after 3 seconds
+            setTimeout(() => {
+                console.log('Attempting to reconnect SSE...');
+                initializeSSE();
+            }, 3000);
+        };
+    }
+    
+    function handleRealTimeUpdate(update) {
+        console.log('Real-time update received:', update);
+        
+        switch (update.type) {
+            case 'connected':
+                console.log('SSE client connected with ID:', update.client_id);
+                break;
+                
+            case 'record_added':
+                handleRecordAdded(update.data);
+                break;
+                
+            case 'record_updated':
+                handleRecordUpdated(update.data);
+                break;
+                
+            case 'record_deleted':
+                handleRecordDeleted(update.data);
+                break;
+                
+            case 'bulk_update':
+                handleBulkUpdate(update.data);
+                break;
+                
+            default:
+                console.log('Unknown update type:', update.type);
+        }
+    }
+    
+    function handleRecordAdded(record) {
+        // Show notification
+        showNotification('New record added: ' + record.subject, 'success');
+        
+        // Refresh the current view
+        const currentQuery = searchInput ? searchInput.value.trim() : '';
+        performSearch(currentQuery);
+    }
+    
+    function handleRecordUpdated(record) {
+        // Show notification
+        showNotification('Record updated: ' + record.subject, 'info');
+        
+        // Refresh the current view
+        const currentQuery = searchInput ? searchInput.value.trim() : '';
+        performSearch(currentQuery);
+    }
+    
+    function handleRecordDeleted(data) {
+        // Show notification
+        showNotification('Record deleted: ' + data.id, 'warning');
+        
+        // Refresh the current view
+        const currentQuery = searchInput ? searchInput.value.trim() : '';
+        performSearch(currentQuery);
+    }
+    
+    function handleBulkUpdate(data) {
+        // Show notification for bulk operations
+        const actionText = {
+            'mark_completed': 'marked as completed',
+            'mark_pending': 'marked as pending',
+            'delete': 'deleted'
+        }[data.action] || 'updated';
+        
+        const message = `${data.count} of ${data.total} records ${actionText}`;
+        const notificationType = data.action === 'delete' ? 'warning' : 'success';
+        
+        showNotification(`Bulk action: ${message}`, notificationType);
+        
+        // Refresh the current view
+        const currentQuery = searchInput ? searchInput.value.trim() : '';
+        performSearch(currentQuery);
+        
+        // Clear any selected checkboxes after bulk action
+        const selectAllCheckbox = document.getElementById('selectAll');
+        const recordCheckboxes = document.querySelectorAll('.record-checkbox');
+        const bulkActionsContainer = document.getElementById('bulkActionsContainer');
+        
+        if (selectAllCheckbox) selectAllCheckbox.checked = false;
+        recordCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        
+        // Hide bulk actions container
+        if (bulkActionsContainer) {
+            bulkActionsContainer.classList.add('d-none');
+        }
+        
+        // Update selected count
+        const selectedCountSpan = document.getElementById('selectedCount');
+        if (selectedCountSpan) {
+            selectedCountSpan.textContent = '0 selected';
+        }
+    }
+    
+    function showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        notification.innerHTML = `
+            <strong>📢 Real-time Update:</strong> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Add to page
+        document.body.appendChild(notification);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+    
+    function showRealTimeStatus(status, type) {
+        // Find or create status indicator
+        let statusIndicator = document.getElementById('realTimeStatus');
+        if (!statusIndicator) {
+            statusIndicator = document.createElement('div');
+            statusIndicator.id = 'realTimeStatus';
+            statusIndicator.className = 'position-fixed';
+            statusIndicator.style.cssText = 'bottom: 20px; right: 20px; z-index: 1000;';
+            document.body.appendChild(statusIndicator);
+        }
+        
+        const icon = type === 'success' ? '🟢' : '🔴';
+        statusIndicator.innerHTML = `
+            <span class="badge bg-${type}">
+                ${icon} Real-time: ${status}
+            </span>
+        `;
+        
+        // Hide success status after 3 seconds
+        if (type === 'success') {
+            setTimeout(() => {
+                if (statusIndicator && statusIndicator.innerHTML.includes(status)) {
+                    statusIndicator.style.display = 'none';
+                }
+            }, 3000);
+        } else {
+            statusIndicator.style.display = 'block';
+        }
+    }
+    
+    // Filter and Sort functionality
+    const filterControls = document.getElementById('filterControls');
+    const filterToggleButton = document.querySelector('[data-bs-target="#filterControls"]');
+    const filterToggleIcon = document.getElementById('filterToggleIcon');
+    const dateFromInput = document.getElementById('dateFrom');
+    const dateToInput = document.getElementById('dateTo');
+    const statusFilter = document.getElementById('statusFilter');
+    const senderFilter = document.getElementById('senderFilter');
+    const sortBySelect = document.getElementById('sortBy');
+    const sortOrderSelect = document.getElementById('sortOrder');
+    const clearFiltersButton = document.getElementById('clearFilters');
+    
+    let allRecords = []; // Store all records for client-side filtering
+    let uniqueSenders = new Set();
+    
+    // Toggle filter panel icon
+    if (filterControls && filterToggleButton && filterToggleIcon) {
+        filterControls.addEventListener('shown.bs.collapse', function() {
+            filterToggleIcon.textContent = '▲';
+            filterToggleButton.innerHTML = '<span id="filterToggleIcon">▲</span> Hide Filters';
+        });
+        
+        filterControls.addEventListener('hidden.bs.collapse', function() {
+            filterToggleIcon.textContent = '▼';
+            filterToggleButton.innerHTML = '<span id="filterToggleIcon">▼</span> Show Filters';
+        });
+    }
+    
+    // Store records for filtering
+    function storeRecords(records) {
+        allRecords = records;
+        updateSenderOptions(records);
+    }
+    
+    // Update sender dropdown options
+    function updateSenderOptions(records) {
+        uniqueSenders.clear();
+        records.forEach(record => {
+            if (record.sender && record.sender.trim()) {
+                uniqueSenders.add(record.sender);
+            }
+        });
+        
+        // Clear and repopulate sender filter
+        if (senderFilter) {
+            const currentValue = senderFilter.value;
+            senderFilter.innerHTML = '<option value="">All Senders</option>';
+            
+            Array.from(uniqueSenders).sort().forEach(sender => {
+                const option = document.createElement('option');
+                option.value = sender;
+                option.textContent = sender;
+                if (sender === currentValue) option.selected = true;
+                senderFilter.appendChild(option);
+            });
+        }
+    }
+    
+    // Apply filters and sorting
+    function applyFiltersAndSort() {
+        let filteredRecords = [...allRecords];
+        
+        // Apply date range filter
+        if (dateFromInput && dateFromInput.value) {
+            const fromDate = new Date(dateFromInput.value);
+            filteredRecords = filteredRecords.filter(record => {
+                const recordDate = new Date(record.date.split(' ')[0]); // Extract date part
+                return recordDate >= fromDate;
+            });
+        }
+        
+        if (dateToInput && dateToInput.value) {
+            const toDate = new Date(dateToInput.value);
+            filteredRecords = filteredRecords.filter(record => {
+                const recordDate = new Date(record.date.split(' ')[0]); // Extract date part
+                return recordDate <= toDate;
+            });
+        }
+        
+        // Apply status filter
+        if (statusFilter && statusFilter.value) {
+            filteredRecords = filteredRecords.filter(record => 
+                record.status === statusFilter.value
+            );
+        }
+        
+        // Apply sender filter
+        if (senderFilter && senderFilter.value) {
+            filteredRecords = filteredRecords.filter(record => 
+                record.sender === senderFilter.value
+            );
+        }
+        
+        // Apply sorting
+        if (sortBySelect && sortOrderSelect) {
+            const sortBy = sortBySelect.value;
+            const sortOrder = sortOrderSelect.value;
+            
+            filteredRecords.sort((a, b) => {
+                let aValue = a[sortBy];
+                let bValue = b[sortBy];
+                
+                // Handle date sorting specially
+                if (sortBy === 'date') {
+                    aValue = new Date(aValue);
+                    bValue = new Date(bValue);
+                } else {
+                    // Convert to string for comparison
+                    aValue = String(aValue).toLowerCase();
+                    bValue = String(bValue).toLowerCase();
+                }
+                
+                let comparison = 0;
+                if (aValue < bValue) comparison = -1;
+                else if (aValue > bValue) comparison = 1;
+                
+                return sortOrder === 'desc' ? -comparison : comparison;
+            });
+        }
+        
+        // Update table with filtered and sorted results
+        updateTable(filteredRecords, filteredRecords.length, '');
+    }
+    
+    // Clear all filters
+    function clearAllFilters() {
+        if (dateFromInput) dateFromInput.value = '';
+        if (dateToInput) dateToInput.value = '';
+        if (statusFilter) statusFilter.value = '';
+        if (senderFilter) senderFilter.value = '';
+        if (sortBySelect) sortBySelect.value = 'date';
+        if (sortOrderSelect) sortOrderSelect.value = 'desc';
+        
+        // Apply filters (which will now show all records)
+        applyFiltersAndSort();
+    }
+    
+    // Add event listeners for filter controls
+    if (dateFromInput) dateFromInput.addEventListener('change', applyFiltersAndSort);
+    if (dateToInput) dateToInput.addEventListener('change', applyFiltersAndSort);
+    if (statusFilter) statusFilter.addEventListener('change', applyFiltersAndSort);
+    if (senderFilter) senderFilter.addEventListener('change', applyFiltersAndSort);
+    if (sortBySelect) sortBySelect.addEventListener('change', applyFiltersAndSort);
+    if (sortOrderSelect) sortOrderSelect.addEventListener('change', applyFiltersAndSort);
+    if (clearFiltersButton) clearFiltersButton.addEventListener('click', clearAllFilters);
+    
+    // Override the existing performSearch function to include filtering
+    const originalPerformSearch = performSearch;
+    performSearch = function(query) {
+        console.log('Performing search with query:', query);
+        
+        // Show loading state
+        recordCount.textContent = 'Searching...';
+        recordCount.className = 'badge bg-warning';
+        
+        // Make API call to search endpoint
+        fetch(`/debug_search?q=${encodeURIComponent(query)}`)
+            .then(response => {
+                console.log('Search response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Search data received:', data);
+                
+                // Store records for filtering
+                storeRecords(data.records);
+                
+                // Apply current filters and sorting
+                applyFiltersAndSort();
+            })
+            .catch(error => {
+                console.error('Search error:', error);
+                recordCount.textContent = 'Search error';
+                recordCount.className = 'badge bg-danger';
+            });
+    };
+    
+    // Load initial data
+    performSearch('');
+    
+    // Initialize SSE connection when page loads
+    initializeSSE();
+    
+    // Clean up SSE connection when page unloads
+    window.addEventListener('beforeunload', function() {
+        if (eventSource) {
+            eventSource.close();
+        }
+    });
+    
+});
+
+// Philippine Standard Time Clock
+function updatePSTClock() {
+    const now = new Date();
+    
+    // Convert to Philippine Standard Time (UTC+8)
+    const pstTime = new Date(now.getTime() + (8 * 60 * 60 * 1000) + (now.getTimezoneOffset() * 60 * 1000));
+    
+    // Format time with AM/PM
+    let hours = pstTime.getHours();
+    const minutes = pstTime.getMinutes().toString().padStart(2, '0');
+    const seconds = pstTime.getSeconds().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    
+    // Convert to 12-hour format
+    hours = hours % 12;
+    hours = hours ? hours : 12; // 0 should be 12
+    hours = hours.toString().padStart(2, '0');
+    
+    const timeString = `${hours}:${minutes}:${seconds} ${ampm}`;
+    
+    const clockElement = document.getElementById('pst-clock');
+    if (clockElement) {
+        clockElement.textContent = timeString;
+    }
+}
+
+// Update the clock immediately and then every second
+updatePSTClock();
+setInterval(updatePSTClock, 1000);
+
+</script>
+</body>
+</html>
+

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "LGU_TNGLN-MAYOR'S OFFICE - 006",
+    "date": "2025-08-05 10:49:16",
+    "sender": "Mayor Office",
+    "subject": "Budget Approval",
+    "destination": "City Hall"
+  },
+  {
+    "id": "LGU_TNGLN-MAYOR'S OFFICE - 007",
+    "date": "2025-08-05 10:49:16",
+    "sender": "City Council",
+    "subject": "Ordinance Draft",
+    "destination": "Legal Department"
+  },
+  {
+    "id": "LGU_TNGLN-MAYOR'S OFFICE - 008",
+    "date": "2025-08-05 10:49:16",
+    "sender": "Public Works",
+    "subject": "Infrastructure Report",
+    "destination": "Engineering Dept"
+  }
+]

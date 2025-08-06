@@ -1,0 +1,23 @@
+[
+  {
+    "id": "LGU_TNGLN-MAYOR'S OFFICE - 001",
+    "date": "2025-08-05 11:26:16",
+    "sender": "John Doe",
+    "subject": "Budget Report",
+    "destination": "Finance Dept"
+  },
+  {
+    "id": "LGU_TNGLN-MAYOR'S OFFICE - 002",
+    "date": "2025-08-05 11:26:16",
+    "sender": "Jane Smith",
+    "subject": "Meeting Minutes",
+    "destination": "Management"
+  },
+  {
+    "id": "LGU_TNGLN-MAYOR'S OFFICE - 003",
+    "date": "2025-08-05 11:26:16",
+    "sender": "Bob Johnson",
+    "subject": "Project Update",
+    "destination": "Team Lead"
+  }
+]

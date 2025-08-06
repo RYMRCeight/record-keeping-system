@@ -1,0 +1,4 @@
+id,date,sender,subject,destination
+DOC_20250805_101434,2025-01-01 09:00:00,John Smith,Invoice #12345,Accounting
+DOC_20250805_101434,2025-01-01 10:30:00,Marketing Department,Monthly Report,Management
+DOC_20250805_101434,2025-01-01 14:15:00,HR Department,Employee Contract,Legal Department

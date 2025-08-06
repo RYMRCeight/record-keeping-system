@@ -1,0 +1,16 @@
+RECORD KEEPING SYSTEM - EXPORT REPORT
+==================================================
+Export Date: 2025-08-05 10:17:51
+Total Records: 3
+
+STATISTICS:
+--------------------
+Total Records: 3
+Unique Senders: 3
+Unique Destinations: 3
+
+DETAILED RECORDS:
+--------------------
+1. [DOC_20250805_101434] 2025-01-01 09:00:00 | From: John Smith | To: Accounting | Subject: Invoice #12345
+2. [DOC_20250805_101434] 2025-01-01 10:30:00 | From: Marketing Department | To: Management | Subject: Monthly Report
+3. [DOC_20250805_101434] 2025-01-01 14:15:00 | From: HR Department | To: Legal Department | Subject: Employee Contract
