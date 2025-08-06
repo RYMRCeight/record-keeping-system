@@ -1,0 +1,20 @@
+LGU RECORD KEEPING SYSTEM - QUICK START
+=====================================
+
+STEP 1: Double-click "START_LGU_SYSTEM.bat"
+       (This will automatically open your browser)
+
+STEP 2: Login with default credentials:
+       Username: admin
+       Password: admin123
+
+STEP 3: Start using the system!
+
+IMPORTANT: Change the default passwords after first login
+
+For detailed instructions, see README_EXE.txt
+
+=====================================
+System Requirements: Windows 7/8/10/11
+File Size: ~48MB
+No Installation Required!

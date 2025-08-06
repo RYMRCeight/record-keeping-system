@@ -648,6 +648,10 @@ class RecordKeeper:
                 original_records = self.records.copy()
             else:
                 self.records = []
+                # Reset ID counter when replacing all records
+                DocumentRecord._id_counter = 0
+                self._save_counter()
+                print("ID counter reset - numbering will start from 001 for new records.")
             
             imported_count = 0
             error_count = 0
@@ -736,6 +740,10 @@ class RecordKeeper:
                 original_records = self.records.copy()
             else:
                 self.records = []
+                # Reset ID counter when replacing all records
+                DocumentRecord._id_counter = 0
+                self._save_counter()
+                print("ID counter reset - numbering will start from 001 for new records.")
             
             restored_count = 0
             error_count = 0

@@ -1,4 +1,12 @@
-# 🏛️ LGU Record Keeping System
+# 🏛️ LGU Record Keeping System - Local Version
+
+**This is the LOCAL DEVELOPMENT version** - with persistent data storage and full development features.
+
+## 🎯 Purpose
+- **Local development and testing**
+- **Persistent data storage** (your data is saved permanently)
+- **Full feature development**
+- **Production-ready local system**
 
 A comprehensive document management and record keeping system built with Flask, designed for Local Government Units (LGUs) and similar organizations.
 
